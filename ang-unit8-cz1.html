@@ -1,0 +1,442 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angielskie - Unit 8 - 1/2</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f1f5f9;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+}
+
+h1 {
+    color: #1e293b;
+}
+
+.counter {
+    color: #64748b;
+    margin: 20px;
+}
+
+.progress {
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: #3b82f6;
+    width: 0%;
+    transition: width 0.3s;
+}
+
+.flashcard {
+    height: 280px;
+    perspective: 1000px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.5s;
+}
+
+.flashcard.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    box-shadow: 0 8px 25px #00000015;
+    font-size: 28px;
+    font-weight: bold;
+    overflow-wrap: anywhere;
+}
+
+.card-front {
+    background: white;
+    color: #1e293b;
+}
+
+.card-back {
+    background: #2563eb;
+    color: white;
+    transform: rotateY(180deg);
+}
+
+.hint {
+    color: #94a3b8;
+    font-size: 14px;
+    margin: 15px 0 25px;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+button {
+    border: none;
+    padding: 13px 18px;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+button.secondary {
+    background: #64748b;
+}
+
+button.green {
+    background: #16a34a;
+}
+
+button.active {
+    background: #0f172a;
+    outline: 3px solid #93c5fd;
+}
+
+@media(max-width: 450px) {
+    .flashcard {
+        height: 240px;
+    }
+
+    .card-front, .card-back {
+        font-size: 23px;
+    }
+
+    button {
+        padding: 12px 14px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📚 Angielskie fiszki</h1>
+
+    <div class="buttons">
+        <button id="enButton" class="active" onclick="setDirection('en')">
+            EN → PL
+        </button>
+
+        <button id="plButton" onclick="setDirection('pl')">
+            PL → EN
+        </button>
+    </div>
+
+    <div class="counter" id="counter"></div>
+
+    <div class="progress">
+        <div class="progress-bar" id="progress"></div>
+    </div>
+
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+        <div class="card-inner">
+            <div class="card-front" id="front"></div>
+            <div class="card-back" id="back"></div>
+        </div>
+    </div>
+
+    <div class="hint">
+        Kliknij fiszkę, aby zobaczyć tłumaczenie
+    </div>
+
+    <div class="buttons">
+        <button class="secondary" onclick="previousCard()">
+            ← Poprzednia
+        </button>
+
+        <button onclick="flipCard()">
+            Odwróć
+        </button>
+
+        <button onclick="nextCard()">
+            Następna →
+        </button>
+    </div>
+
+    <div class="buttons">
+        <button class="green" onclick="shuffleCards()">
+            🔀 Losuj
+        </button>
+
+        <button class="secondary" onclick="resetCards()">
+            Od początku
+        </button>
+    </div>
+
+</div>
+
+<script>
+
+// Baza fiszek
+const rawData = `
+become homeless#stać się bezdomnym;
+charity shop#sklep organizacji charytatywnej;
+community service#prace społeczne;
+elderly people#osoby starsze;
+engage with the issues#zajmować się sprawami;
+for a good cause#w dobrym celu;
+give something back#dać coś od siebie;
+keep an eye on#mieć oko na coś/kogoś;
+lack confidence#nie wierzyć we własne możliwości;
+learning disability#trudności w uczeniu się;
+lend a hand#pomóc;
+local initiative#lokalna inicjatywa;
+make a contribution#wnieść wkład;
+one-to-one tuition#lekcje indywidualne;
+provide assistance#zapewniać pomoc;
+raise funds#zbierać fundusze;
+real eye-opener#prawdziwe odkrycie;
+refuge#schronienie;
+retain your independence#zachować niezależność;
+safety net#system zabezpieczeń;
+social isolation#izolacja społeczna;
+suffer hardship#zmagać się z trudnościami;
+a real laugh#dobra zabawa;
+not that hard#nie takie trudne;
+check out#zapoznać się;
+have a go at#spróbować;
+said to myself#powiedzieć sobie;
+aid agency#organizacja humanitarna;
+armed conflict#konflikt zbrojny;
+assess#oceniać;
+co-ordinate#koordynować;
+distribute#rozprowadzać;
+eliminate#eliminować;
+encounter#napotkać;
+infrastructure#infrastruktura;
+preserve#zachować;
+priority#priorytet, pierwszeństwo;
+process#przetwarzać;
+refugee#uchodźca;
+relief effort#pomoc humanitarna;
+suffering#cierpienie;
+survivor#osoba ocalała;
+threaten#zagrażać;
+acidity#kwasowość;
+biodiversity#bioróżnorodność;
+eradicate#wyeliminować;
+extinction#wymarcie;
+parasite#pasożyt;
+resistant#odporny;
+acknowledge different perspectives#uznać istnienie różnych punktów widzenia;
+avoid confrontation#unikać konfrontacji;
+challenge prejudice or discrimination#nie tolerować uprzedzeń lub dyskryminacji;
+find a compromise#znaleźć kompromis;
+go against your values#być sprzecznym z czyimiś wartościami;
+make judgements#dokonać oceny;
+set aside your differences#odłożyć na bok różnice;
+`;
+
+// Przygotowanie fiszek
+const originalCards = rawData.trim()
+    .split(";")
+    .filter(item => item.trim())
+    .map(item => {
+        const parts = item.trim().split("#");
+
+        return {
+            english: parts[0].trim(),
+            polish: parts.slice(1).join("#").trim()
+        };
+    });
+
+// Zmienne
+let cards = [...originalCards];
+let current = 0;
+let flipped = false;
+let direction = "en";
+
+// Wyświetlanie fiszki bez migania starej definicji
+function displayCard() {
+
+    const flashcard = document.getElementById("flashcard");
+
+    // Wyłącz animację na czas zmiany treści
+    flashcard.style.transition = "none";
+
+    // Natychmiast wróć do przedniej strony
+    flashcard.classList.remove("flipped");
+
+    flipped = false;
+
+    // Ustaw nową zawartość
+    if (direction === "en") {
+
+        document.getElementById("front").textContent =
+            cards[current].english;
+
+        document.getElementById("back").textContent =
+            cards[current].polish;
+
+    } else {
+
+        document.getElementById("front").textContent =
+            cards[current].polish;
+
+        document.getElementById("back").textContent =
+            cards[current].english;
+    }
+
+    // Aktualizacja licznika
+    document.getElementById("counter").textContent =
+        `Fiszka ${current + 1} z ${cards.length}`;
+
+    // Aktualizacja paska postępu
+    document.getElementById("progress").style.width =
+        ((current + 1) / cards.length * 100) + "%";
+
+    // Przywrócenie animacji po zmianie karty
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            flashcard.style.transition = "";
+        });
+    });
+}
+
+// Zmiana kierunku nauki
+function setDirection(dir) {
+
+    direction = dir;
+
+    document.getElementById("enButton")
+        .classList.toggle("active", dir === "en");
+
+    document.getElementById("plButton")
+        .classList.toggle("active", dir === "pl");
+
+    displayCard();
+}
+
+// Odwracanie fiszki
+function flipCard() {
+
+    flipped = !flipped;
+
+    document.getElementById("flashcard")
+        .classList.toggle("flipped", flipped);
+}
+
+// Następna fiszka
+function nextCard() {
+
+    current++;
+
+    if (current >= cards.length) {
+        current = 0;
+    }
+
+    displayCard();
+}
+
+// Poprzednia fiszka
+function previousCard() {
+
+    current--;
+
+    if (current < 0) {
+        current = cards.length - 1;
+    }
+
+    displayCard();
+}
+
+// Losowanie fiszek
+function shuffleCards() {
+
+    for (let i = cards.length - 1; i > 0; i--) {
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+
+    current = 0;
+
+    displayCard();
+}
+
+// Powrót do oryginalnej kolejności
+function resetCards() {
+
+    cards = [...originalCards];
+
+    current = 0;
+
+    displayCard();
+}
+
+// Obsługa klawiatury
+document.addEventListener("keydown", function(e) {
+
+    if (e.code === "Space") {
+        e.preventDefault();
+        flipCard();
+    }
+
+    if (e.code === "ArrowRight") {
+        nextCard();
+    }
+
+    if (e.code === "ArrowLeft") {
+        previousCard();
+    }
+
+});
+
+// Uruchomienie strony
+displayCard();
+
+</script>
+
+</body>
+</html>
